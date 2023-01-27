@@ -63,3 +63,7 @@ writer = IndexWriter(indexDir,writerConfig)
 
 indexSinglePlot('test','I am rich')
 writer.close()
+
+
+
+#1111
