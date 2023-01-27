@@ -25,14 +25,14 @@ while stream.incrementToken():
     tokens.append(stream.getAttribute(CharTermAttribute.class_).toString())
 print(tokens)
 
-# print('Stopword Analyzer')
-# analyzer = StopAnalyzer() # need to provide a set of stop words 
-# stream = analyzer.tokenStream("",StringReader(test))
-# stream.reset()
-# tokens = []
-# while stream.incrementToken():
-#     tokens.append(stream.getAttribute(CharTermAttribute.class_).toString())
-# print(tokens)
+print('Stopword Analyzer')
+analyzer = StopAnalyzer() # need to provide a set of stop words 
+stream = analyzer.tokenStream("",StringReader(test))
+stream.reset()
+tokens = []
+while stream.incrementToken():
+    tokens.append(stream.getAttribute(CharTermAttribute.class_).toString())
+print(tokens)
 
 print('Standard Analyzer')
 analyzer = StandardAnalyzer()
