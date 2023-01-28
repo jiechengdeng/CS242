@@ -61,5 +61,5 @@ indexDir = FSDirectory.open(indexPath)
 writerConfig = IndexWriterConfig(StandardAnalyzer())
 writer = IndexWriter(indexDir,writerConfig)
 
-indexSinglePlot('test','I am rich')
+indexSinglePlot('test','I am opioroxeo')
 writer.close()
