@@ -26,6 +26,54 @@ def document_insertion(tweets):
     doc.add(document.Field('user_name',tweets.username,document.TextField.TYPE_STORED))
     
     writer.addDocument(doc)
+    
+"""
+TF-IDF values should be calculated BEFORE the insertion
+
+calculate TF values: Count the number of occurrences of each term in each document
+
+calculate IDF values: Calculate the logarithmically-scaled inverse fraction of the documents that contain each term
+
+"""
+# 有一个list of document，需要计算tfidf分数，
+def ranking(documents): 
+    # tokennize the documents
+    tokenized_docs = [doc.lower().split() for doc in documents]
+    
+    # calculate the term frequency
+    tf = defaultdict(lambda: defaultdict(int))
+    for i, doc in enumerate(tokenized_docs):
+        for term in doc:
+            tf[i][term] += 1
+            
+    # calculate the inverse document frequency
+    idf = defaultdict(int)
+    num_docs = len(tokenized_docs)
+    for doc in tokenized_docs:
+        for term in set(doc):
+            idf[term] += 1
+
+    for term in idf.keys():
+        idf[term] = math.log(num_docs / idf[term])
+        
+    # calculate TF-IDF scores
+    tfidf = defaultdict(lambda: defaultdict(float))
+    for i, doc in enumerate(tokenized_docs):
+        for term in doc:
+            tfidf[i][term] = tf[i][term] * idf[term]
+    
+    # Rank the documents
+    scores = []
+    for i, doc in enumerate(tokenized_docs):
+        score = sum(tfidf[i][term] for term in doc)
+        scores.append((i, score))
+
+    scores.sort(key=lambda x: x[1], reverse=True)
+    
+    return [documents[i] for i, _ in scores]  
+
+    
+
 
 
 if __name__ == "__main__":
