@@ -1,15 +1,13 @@
 import os
 import subprocess
-import pandas as pd
 import lucene
 import math
 from java.io import *
-from org.apache.lucene.util import BytesRefIterator, Version
 from org.apache.lucene.analysis.tokenattributes import CharTermAttribute
 from org.apache.lucene.analysis.standard import StandardAnalyzer
 from org.apache.lucene.analysis.en import EnglishAnalyzer
 import org.apache.lucene.document as document
-from org.apache.lucene.index import IndexWriter, IndexWriterConfig, IndexOptions, DirectoryReader, Term
+from org.apache.lucene.index import IndexWriter, IndexWriterConfig, IndexOptions
 from org.apache.lucene.store import SimpleFSDirectory, FSDirectory
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
@@ -109,10 +107,7 @@ def document_insertion(tweets,id,numDocs):
     return doc
 
 if __name__ == "__main__":
-    # if not os.path.exists("data/tweets.csv"):
-    #     process_json("path to tweets_json")
-    # df = pd.read_csv("path to data.csv")
-
+    #TODO: Just parse json and write it to dictionary, no need to write into a csv file
     lucene.initVM()
     if os.path.exists("index/"):
         print('remove index folder\n')
