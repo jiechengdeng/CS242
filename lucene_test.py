@@ -3,7 +3,6 @@ from java.io import *
 from org.apache.lucene.analysis.tokenattributes import CharTermAttribute
 from org.apache.lucene.analysis.standard import StandardAnalyzer
 from org.apache.lucene.analysis.en import EnglishAnalyzer
-from org.apache.lucene.analysis.core import WhitespaceAnalyzer, SimpleAnalyzer, StopAnalyzer
 import org.apache.lucene.document as document
 from org.apache.lucene.index import IndexWriter, IndexWriterConfig
 from org.apache.lucene.store import SimpleFSDirectory, FSDirectory
