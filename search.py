@@ -64,10 +64,11 @@ searcher = IndexSearcher(reader)
 
 query = "example query is an apple"
 query = remove_stopwords(query)
-search_field = "text"
+search_field = "processed_text"
 analyzer = EnglishAnalyzer()
 query = QueryParser(search_field,analyzer).parse(query)
 
+print(f'Query: {query}')
 results = searcher.search(query,10)
 for hit in results.scoreDocs:
     d = reader.document(hit.doc)

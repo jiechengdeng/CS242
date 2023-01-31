@@ -11,7 +11,6 @@ from org.apache.lucene.analysis.en import EnglishAnalyzer
 import org.apache.lucene.document as document
 from org.apache.lucene.index import IndexWriter, IndexWriterConfig, IndexOptions, DirectoryReader, Term
 from org.apache.lucene.store import SimpleFSDirectory, FSDirectory
-from org.apache.lucene.search import IndexSearcher
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from collections import defaultdict
@@ -89,15 +88,15 @@ def document_insertion(tweets,id,numDocs):
     field_type.setIndexOptions(IndexOptions.DOCS_AND_FREQS)
     field_type.setStoreTermVectors(True)
 
-
     new_text = text_stemming(tweets['text'])
     new_text = remove_stopwords(new_text)
 
     # calculate tf 
     map_tf(new_text,id,numDocs)
 
-    text_field = document.Field("text",new_text,field_type)
     id_field = document.Field("id",tweets['id'],field_type)
+    text_field = document.Field("processed_text",new_text,field_type)
+    original_text_field = document.Field("text",tweets['text'],field_type)
     cor_field = document.Field("coordinates",tweets['coordinates'],field_type)
     name_field = document.Field("user_name",tweets['user_name'],field_type)
 
@@ -105,53 +104,9 @@ def document_insertion(tweets,id,numDocs):
     doc.add(id_field)
     doc.add(cor_field) 
     doc.add(name_field)
-
+    doc.add(original_text_field)
     writer.addDocument(doc)
-    
-"""
-TF-IDF values should be calculated BEFORE the insertion
-
-calculate TF values: Count the number of occurrences of each term in each document
-
-calculate IDF values: Calculate the logarithmically-scaled inverse fraction of the documents that contain each term
-
-"""
-# 有一个list of document，需要计算tfidf分数，
-def ranking(documents): 
-    # tokennize the documents
-    tokenized_docs = [doc.lower().split() for doc in documents]
-    
-    # calculate the term frequency
-    tf = defaultdict(lambda: defaultdict(int))
-    for i, doc in enumerate(tokenized_docs):
-        for term in doc:
-            tf[i][term] += 1
-            
-    # calculate the inverse document frequency
-    idf = defaultdict(int)
-    num_docs = len(tokenized_docs)
-    for doc in tokenized_docs:
-        for term in set(doc):
-            idf[term] += 1
-
-    for term in idf.keys():
-        idf[term] = math.log(num_docs / idf[term])
-        
-    # calculate TF-IDF scores
-    tfidf = defaultdict(lambda: defaultdict(float))
-    for i, doc in enumerate(tokenized_docs):
-        for term in doc:
-            tfidf[i][term] = tf[i][term] * idf[term]
-    
-    # Rank the documents
-    scores = []
-    for i, doc in enumerate(tokenized_docs):
-        score = sum(tfidf[i][term] for term in doc)
-        scores.append((i, score))
-
-    scores.sort(key=lambda x: x[1], reverse=True)
-    
-    return [documents[i] for i, _ in scores]  
+    return doc
 
 if __name__ == "__main__":
     # if not os.path.exists("data/tweets.csv"):
@@ -160,6 +115,7 @@ if __name__ == "__main__":
 
     lucene.initVM()
     if os.path.exists("index/"):
+        print('remove index folder\n')
         subprocess.run("rm -r index",shell=True)
     
     # create index object
@@ -181,15 +137,18 @@ if __name__ == "__main__":
     id = 0
     numDocs = len(df)
     for tw in df:
-        document_insertion(tw,id,numDocs)
+        d = document_insertion(tw,id,numDocs)
+        if id < 10:
+            print("Document Inserted:")
+            print('---------------------------')
+            for f in d.getFields():
+                print(f'{f.name()}: {f.stringValue()}')
+            
+            print('---------------------------')
         id += 1
+
     writer.close()
 
     # calculate idf for each term
     map_idf(numDocs)
-
     write_tf_idf(numDocs)
-
-
-                       
-    
