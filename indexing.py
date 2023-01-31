@@ -65,7 +65,8 @@ def map_idf(numDocs):
     
 
 def text_stemming(text):
-    stream = en_analyzer.tokenStream("",text)
+    analyzer = EnglishAnalyzer()
+    stream = analyzer.tokenStream("",text)
     stream.reset()
     tokens = []
     while stream.incrementToken():
@@ -76,7 +77,7 @@ def text_stemming(text):
 
 def remove_stopwords(text):
     text_tokens = word_tokenize(text)
-    tokens = [word for word in text_tokens if not word in stop_words]
+    tokens = [word for word in text_tokens if not word in stopwords.words()]
 
     return " ".join(tokens)
 
@@ -152,10 +153,6 @@ def ranking(documents):
     
     return [documents[i] for i, _ in scores]  
 
-    
-
-
-
 if __name__ == "__main__":
     # if not os.path.exists("data/tweets.csv"):
     #     process_json("path to tweets_json")
@@ -164,17 +161,12 @@ if __name__ == "__main__":
     lucene.initVM()
     if os.path.exists("index/"):
         subprocess.run("rm -r index",shell=True)
-    stop_words = set(['the','a','an'])
     
     # create index object
     indexPath = File("index/").toPath() # create index path
     indexDir = FSDirectory.open(indexPath) # create lucene store object to store index in hard disk
     writerConfig = IndexWriterConfig(StandardAnalyzer()) # create index configuration object. allow us to configure the index
     writer = IndexWriter(indexDir,writerConfig) # create index writer with the input of index path and configuration 
-
-    # create different analyzers 
-    en_analyzer = EnglishAnalyzer()
-
 
     # read each document and use index writer to write to the index
     tf = defaultdict(lambda: defaultdict(int))
