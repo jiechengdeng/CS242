@@ -1,4 +1,6 @@
 import lucene
+import time
+from datetime import timedelta
 from java.io import *
 from org.apache.lucene.search import IndexSearcher
 from org.apache.lucene.store import SimpleFSDirectory, FSDirectory
@@ -8,10 +10,15 @@ from org.apache.lucene.index import DirectoryReader
 from indexing import remove_stopwords
 from collections import defaultdict
 
+
+def end_execution():
+    end = time.time()
+    print("time elapsed:",str(timedelta(seconds=end-start)))
+
 def get_tf_idf():
     with open("temp/tf.txt","r") as f:
         for line in f:
-            tfs = line.split("|")
+            tfs = line.strip().split("|")
             for element in tfs:
                 tokens = element.split(",")
                 if len(tokens) == 3:
@@ -20,7 +27,7 @@ def get_tf_idf():
 
     with open("temp/idf.txt","r") as f:
         for line in f:
-            idfs = line.split("|")
+            idfs = line.strip().split("|")
             for element in idfs:
                 tokens = element.split(",")
                 if len(tokens) == 2:
@@ -28,8 +35,7 @@ def get_tf_idf():
         f.close()
     
 # 有一个list of document，需要计算tfidf分数，
-def ranking(documents): 
-        
+def ranking(documents):  
     # calculate TF-IDF scores
     tfidf = defaultdict(lambda: defaultdict(float))
     for i, doc in enumerate(tokenized_docs):
@@ -69,6 +75,9 @@ analyzer = EnglishAnalyzer()
 query = QueryParser(search_field,analyzer).parse(query)
 
 print(f'Query: {query}')
+
+start = time.time()
+
 results = searcher.search(query,10)
 for hit in results.scoreDocs:
     d = reader.document(hit.doc)
@@ -78,3 +87,5 @@ for hit in results.scoreDocs:
         print(f'{f.name()}: {f.stringValue()}')
     
     print('---------------------------')
+
+end_execution()

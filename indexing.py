@@ -91,23 +91,28 @@ def document_insertion(tweets,id,numDocs):
 
     # calculate tf 
     map_tf(new_text,id,numDocs)
+    tweets['processed_text'] = new_text
 
-    id_field = document.Field("id",tweets['id'],field_type)
-    text_field = document.Field("processed_text",new_text,field_type)
-    original_text_field = document.Field("text",tweets['text'],field_type)
-    cor_field = document.Field("coordinates",tweets['coordinates'],field_type)
-    name_field = document.Field("user_name",tweets['user_name'],field_type)
-
-    doc.add(text_field) 
-    doc.add(id_field)
-    doc.add(cor_field) 
-    doc.add(name_field)
-    doc.add(original_text_field)
+    for key in tweets:
+        doc.add(document.Field(key,tweets[key],field_type))
     writer.addDocument(doc)
     return doc
 
 if __name__ == "__main__":
-    #TODO: Just parse json and write it to dictionary, no need to write into a csv file
+    """
+    TODO:
+    parse the json and create dictionary object for each tweets and append it to a list
+    Each tweet should have the following fields:
+    1. Tweet_ID
+    2. User (Name)
+    3. Text
+    4. City
+    5. Country
+    6. Coordinates
+    7. Hashtags
+    8. tweet_url (pick expanded_url field)
+    9. Date
+    """
     lucene.initVM()
     if os.path.exists("index/"):
         print('remove index folder\n')
