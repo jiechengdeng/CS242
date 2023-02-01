@@ -68,7 +68,7 @@ indexDir = FSDirectory.open(indexPath)
 reader = DirectoryReader.open(indexDir)
 searcher = IndexSearcher(reader)
 
-query = "example query is an apple"
+query = "example play football apple 144 455"
 query = remove_stopwords(query)
 search_field = "processed_text"
 analyzer = EnglishAnalyzer()
