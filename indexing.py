@@ -74,7 +74,7 @@ def text_stemming(text):
 
 def remove_stopwords(text):
     text_tokens = word_tokenize(text)
-    tokens = [word for word in text_tokens if not word in stopwords.words()]
+    tokens = [word for word in text_tokens if not word in stopwords.words('english')]
 
     return " ".join(tokens)
 
@@ -86,12 +86,12 @@ def document_insertion(tweets,id,numDocs):
     text_field_type.setIndexOptions(IndexOptions.DOCS_AND_FREQS)
     
 
-    new_text = text_stemming(tweets['text'])
-    new_text = remove_stopwords(new_text)
+    #new_text = text_stemming(tweets['text'])
+    new_text = remove_stopwords(tweets['text'])
 
     # calculate tf 
     map_tf(new_text,id,numDocs)
-    tweets['processed_text'] = new_text
+    tweets['processed_text'] = new_text.lower()
 
     for key in tweets:
         if key == "Tweet_ID":
@@ -102,7 +102,7 @@ def document_insertion(tweets,id,numDocs):
             doc.add(document.DoublePoint(key,tweets[key]))
             doc.add(document.Field(key,str(tweets[key]),document.TextField.TYPE_STORED))
         else:
-            doc.add(document.Field(key,tweets[key],document.TextField.TYPE_STORED))
+            doc.add(document.Field(key,tweets[key].lower(),document.TextField.TYPE_STORED))
 
     writer.addDocument(doc)
     return doc

@@ -2,11 +2,12 @@ import lucene
 import time
 from datetime import timedelta
 from java.io import *
-from org.apache.lucene.search import IndexSearcher
+from org.apache.lucene.search import IndexSearcher, BooleanClause, BooleanQuery, Query, TermQuery
 from org.apache.lucene.store import SimpleFSDirectory, FSDirectory
-from org.apache.lucene.queryparser.classic import QueryParser
+from org.apache.lucene.queryparser.classic import QueryParser, MultiFieldQueryParser
 from org.apache.lucene.analysis.en import EnglishAnalyzer
-from org.apache.lucene.index import DirectoryReader
+from org.apache.lucene.analysis.standard import StandardAnalyzer
+from org.apache.lucene.index import DirectoryReader, Term
 from indexing import remove_stopwords
 from collections import defaultdict
 
@@ -65,27 +66,30 @@ indexPath = File("index/").toPath() # create index path
 indexDir = FSDirectory.open(indexPath)
 
 # search the index
+analyzer = StandardAnalyzer()
 reader = DirectoryReader.open(indexDir)
 searcher = IndexSearcher(reader)
 
-query = "example play football apple 144 455"
-query = remove_stopwords(query)
-search_field = "processed_text"
-analyzer = EnglishAnalyzer()
-query = QueryParser(search_field,analyzer).parse(query)
 
-print(f'Query: {query}')
+while True:
+    input_query = input("Please Enter a query:\n")
+    input_query = remove_stopwords(input_query)
+    fields = ['processed_text','latitude']
+    occurs = [BooleanClause.Occur.SHOULD,BooleanClause.Occur.SHOULD]
+    mutliField_parser = MultiFieldQueryParser(fields,analyzer)
+    query = mutliField_parser.parse(input_query,fields,occurs,analyzer)
+    print(f'Query: {query}')
 
-start = time.time()
+    start = time.time()
 
-results = searcher.search(query,10)
-for hit in results.scoreDocs:
-    d = reader.document(hit.doc)
-    print(f'Document {hit.doc} - Score: {hit.score}')
-    print('---------------------------')
-    for f in d.getFields():
-        print(f'{f.name()}: {f.stringValue()}')
-    
-    print('---------------------------')
+    results = searcher.search(query,10)
+    for hit in results.scoreDocs:
+        d = reader.document(hit.doc)
+        print(f'Document {hit.doc} - Score: {hit.score}')
+        print('---------------------------')
+        for f in d.getFields():
+            print(f'{f.name()}: {f.stringValue()}')
+        
+        print('---------------------------')
 
-end_execution()
+    end_execution()
