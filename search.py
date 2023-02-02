@@ -18,7 +18,7 @@ def end_execution():
     print("time elapsed:",str(timedelta(seconds=end-start)))
 
 def extract_numbers(query):
-    numbers = re.findall(r"[-+]?\d*\.\d+|\d+",query)
+    numbers = re.findall(r"[-]?\d*\.\d+|[-]?\d+",query)
     integers = []
     floats = []
     for i in numbers:
@@ -38,9 +38,9 @@ def create_query(query):
     #q1 = QueryParser('processed_text',analyzer).parse(query)
     bQ.add(q1,BooleanClause.Occur.SHOULD)
     
-    numbers = re.findall(r"[-+]?\d*\.\d+|\d+",query)
+    numbers = re.findall(r"[-]?\d*\.\d+|[-]?\d+",query)
     if len(numbers) == 2:
-        q2 = LatLonPoint.newDistanceQuery("Coordinates", float(numbers[0]), float(numbers[1]), 20)
+        q2 = LatLonPoint.newDistanceQuery("Coordinates", float(numbers[0]), float(numbers[1]), 100000.0)
         bQ.add(q2,BooleanClause.Occur.SHOULD)
 
     return bQ.build()
