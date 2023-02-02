@@ -30,7 +30,12 @@ def extract_numbers(query):
 
 def create_query(query):
     bQ = BooleanQuery.Builder()
-    q1 = QueryParser('processed_text',analyzer).parse(query)
+    fields = ['processed_text','User','City','Country','hashtags','url']
+    occurs = [BooleanClause.Occur.SHOULD for i in range(len(fields))]
+
+    mutliField_parser = MultiFieldQueryParser(fields,analyzer)
+    q1 = mutliField_parser.parse(input_query,fields,occurs,analyzer)
+    #q1 = QueryParser('processed_text',analyzer).parse(query)
     bQ.add(q1,BooleanClause.Occur.SHOULD)
     
     numbers = re.findall(r"[-+]?\d*\.\d+|\d+",query)

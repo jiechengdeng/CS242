@@ -37,15 +37,15 @@ def process_json_tokenize(path):
                         if ek == 'hashtags':
                             hashtags = []
                             for tag in vk:
-                                hashtags.append(tag['text'])
+                                hashtags.append(str(tag['text']))
                             tw['hashtags'] = " ".join(hashtags)
                         elif ek == 'media' or ek == 'urls':
                             if len(vk) > 0:
                                 for key,value in vk[0].items():
                                     if key == "expanded_url":
-                                        tw['url'] = value
+                                        tw['url'] = str(value)
                 else:
-                    tw[k] = v
+                    tw[k] = str(v)
             data.append(tw)
     return data
 
@@ -152,11 +152,11 @@ def document_insertion(tweets,id,numDocs):
 
     for key in tweets:
         if key == "Tweet_ID":
-            doc.add(document.Field(key,tweets[key]),metaType)
+            doc.add(document.Field(key,tweets[key],metaType))
         elif key == "processed_text":
             doc.add(document.Field(key,tweets[key],text_field_type))
         elif key == "Coordinates":
-            doc.add(document.LatLonPoint('Coordinates',tweets[key][0],tweets[key][1]))
+            doc.add(document.LatLonPoint('Coordinates',tweets[key][1],tweets[key][0]))
         elif key == "hashtags":
             doc.add(document.Field(key,tweets[key],hashtag_field_type))
         elif key != "Text":
