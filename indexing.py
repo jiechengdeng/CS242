@@ -2,6 +2,7 @@ import os
 import subprocess
 import lucene
 import math
+import json
 from java.io import *
 from org.apache.lucene.analysis.tokenattributes import CharTermAttribute
 from org.apache.lucene.analysis.standard import StandardAnalyzer
@@ -14,8 +15,39 @@ from nltk.tokenize import word_tokenize
 from collections import defaultdict
 
 
+def getElement(co):
+    if len(co) > 0 and isinstance(co[0],list):
+        return getElement(co[0])
+    else:
+        co[0] = float(co[0])
+        co[1] = float(co[1])
+        return co
+
 def process_json_tokenize(path):
-    return None
+    data = []
+    with open("data/sample.json","r") as file:
+        tweets = json.load(file)
+        for t in tweets:
+            tw = {}
+            for k,v in t.items():
+                if k == 'Coordinates':
+                    tw['Coordinates'] = getElement(v)
+                elif k == 'Entities':
+                    for ek, vk in v.items():
+                        if ek == 'hashtags':
+                            hashtags = []
+                            for tag in vk:
+                                hashtags.append(tag['text'])
+                            tw['hashtags'] = " ".join(hashtags)
+                        elif ek == 'media' or ek == 'urls':
+                            if len(vk) > 0:
+                                for key,value in vk[0].items():
+                                    if key == "expanded_url":
+                                        tw['url'] = value
+                else:
+                    tw[k] = v
+            data.append(tw)
+    return data
 
 def write_tf_idf(numDocs):
     if os.path.exists("temp/idf.txt"):
@@ -78,16 +110,41 @@ def remove_stopwords(text):
 
     return " ".join(tokens)
 
-def document_insertion(tweets,id,numDocs):
-    doc = document.Document()
-    text_field_type = document.FieldType()
-    text_field_type.setStored(True)
-    text_field_type.setTokenized(True)
-    text_field_type.setIndexOptions(IndexOptions.DOCS_AND_FREQS)
+def format_coordinate(num):
+    if num < 0:
+        num = f'{abs(num):0>13.4f}'.replace('.','d')
+        new_num = ''
+        for i in num:
+            if i == 'd':
+                continue
+            new_num += str(9-int(i))
+        num = "n" + new_num
+    else:
+        num = f'{num:0>13.4f}'.replace('.','d')
+        num = "p" + num
+    print(num)
+    return num
     
 
+def document_insertion(tweets,id,numDocs):
+    doc = document.Document()
+
+    metaType = document.FieldType()
+    metaType.setStored(True)
+    metaType.setTokenized(False)
+
+    text_field_type = document.FieldType()
+    text_field_type.setStored(False)
+    text_field_type.setTokenized(True)
+    text_field_type.setIndexOptions(IndexOptions.DOCS_AND_FREQS)
+
+    hashtag_field_type = document.FieldType()
+    hashtag_field_type.setStored(True)
+    hashtag_field_type.setTokenized(True)
+    hashtag_field_type.setIndexOptions(IndexOptions.DOCS)
+    
     #new_text = text_stemming(tweets['text'])
-    new_text = remove_stopwords(tweets['text'])
+    new_text = remove_stopwords(tweets['Text'])
 
     # calculate tf 
     map_tf(new_text,id,numDocs)
@@ -95,34 +152,25 @@ def document_insertion(tweets,id,numDocs):
 
     for key in tweets:
         if key == "Tweet_ID":
-            doc.add(document.Field(key,tweets[key]))
-        elif key == "text" or key == "processed_text":
+            doc.add(document.Field(key,tweets[key]),metaType)
+        elif key == "processed_text":
             doc.add(document.Field(key,tweets[key],text_field_type))
-        elif key == "latitude" or key == "longitude":
-            doc.add(document.DoublePoint(key,tweets[key]))
-            doc.add(document.Field(key,str(tweets[key]),document.TextField.TYPE_STORED))
-        else:
+        elif key == "Coordinates":
+            doc.add(document.LatLonPoint('Coordinates',tweets[key][0],tweets[key][1]))
+        elif key == "hashtags":
+            doc.add(document.Field(key,tweets[key],hashtag_field_type))
+        elif key != "Text":
             doc.add(document.Field(key,tweets[key].lower(),document.TextField.TYPE_STORED))
 
     writer.addDocument(doc)
     return doc
 
 if __name__ == "__main__":
-    """
-    TODO:
-    parse the json and create dictionary object for each tweets and append it to a list
-    Each tweet should have the following fields:
-    1. Tweet_ID
-    2. User (Name)
-    3. Text
-    4. City
-    5. Country
-    6. Coordinates (store as latitude, longitude)
-    7. Hashtags
-    8. tweet_url (pick expanded_url field)
-    9. Date
-    """
+
     lucene.initVM()
+    
+    df = process_json_tokenize("data/sample.json")
+
     if os.path.exists("index/"):
         print('remove index folder\n')
         subprocess.run("rm -r index",shell=True)
@@ -131,18 +179,13 @@ if __name__ == "__main__":
     indexPath = File("index/").toPath() # create index path
     indexDir = FSDirectory.open(indexPath) # create lucene store object to store index in hard disk
     writerConfig = IndexWriterConfig(StandardAnalyzer()) # create index configuration object. allow us to configure the index
+    writerConfig.setOpenMode(IndexWriterConfig.OpenMode.CREATE)
     writer = IndexWriter(indexDir,writerConfig) # create index writer with the input of index path and configuration 
 
     # read each document and use index writer to write to the index
     tf = defaultdict(lambda: defaultdict(int))
     idf = defaultdict(int)
 
-    df = [{'text':'this is a example text','id':'12345','latitude':123.5,'longitude':456.23,'user_name':'jeff'},
-          {'text':'Nick likes playing football, he is too strong','id':'33333','latitude':333.5,'longitude':555.33,'user_name':'tim'},
-          {'text':'I have an apple, the man who is doing his works','id':'828282','latitude':999.9,'longitude':666.88,'user_name':'david'},
-    ]
-
-    fields = ['text','id','user_name','coordinates']
     id = 0
     numDocs = len(df)
     for tw in df:
@@ -151,7 +194,7 @@ if __name__ == "__main__":
             print("Document Inserted:")
             print('---------------------------')
             for f in d.getFields():
-                print(f'{f.name()}: {f.stringValue()}')
+                print(f'{f}')
             
             print('---------------------------')
         id += 1
