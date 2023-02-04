@@ -3,6 +3,8 @@ import subprocess
 import lucene
 import math
 import json
+import time
+from datetime import timedelta
 from java.io import *
 from org.apache.lucene.analysis.tokenattributes import CharTermAttribute
 from org.apache.lucene.analysis.standard import StandardAnalyzer
@@ -15,6 +17,10 @@ from nltk.tokenize import word_tokenize
 from collections import defaultdict
 
 
+def end_execution():
+    end = time.time()
+    print("time elapsed:",str(timedelta(seconds=end-start)))
+
 def getElement(co):
     if len(co) > 0 and isinstance(co[0],list):
         return getElement(co[0])
@@ -23,15 +29,17 @@ def getElement(co):
         co[1] = float(co[1])
         return co
 
-def process_json_tokenize(path):
+def process_json_tokenize():
     data = []
-    with open("data/sample.json","r") as file:
+
+    with open("data/tweets.json","r") as file:
         tweets = json.load(file)
         for t in tweets:
             tw = {}
             for k,v in t.items():
                 if k == 'Coordinates':
-                    tw['Coordinates'] = getElement(v)
+                    if v != 'null':
+                        tw['Coordinates'] = getElement(v)
                 elif k == 'Entities':
                     for ek, vk in v.items():
                         if ek == 'hashtags':
@@ -44,7 +52,7 @@ def process_json_tokenize(path):
                                 for key,value in vk[0].items():
                                     if key == "expanded_url":
                                         tw['url'] = str(value)
-                else:
+                elif v != 'null':
                     tw[k] = str(v)
             data.append(tw)
     return data
@@ -125,34 +133,24 @@ def format_coordinate(num):
     print(num)
     return num
     
+def write_text(data):
+    with open("temp/tweet_text.txt","w") as file:
+        for d in data:
+            file.write(f'{d}^&&^||@@#$@@{data[d]}\n')
+    file.close()
 
 def document_insertion(tweets,id,numDocs):
     doc = document.Document()
-
-    metaType = document.FieldType()
-    metaType.setStored(True)
-    metaType.setTokenized(False)
-
-    text_field_type = document.FieldType()
-    text_field_type.setStored(False)
-    text_field_type.setTokenized(True)
-    text_field_type.setIndexOptions(IndexOptions.DOCS_AND_FREQS)
-
-    hashtag_field_type = document.FieldType()
-    hashtag_field_type.setStored(True)
-    hashtag_field_type.setTokenized(True)
-    hashtag_field_type.setIndexOptions(IndexOptions.DOCS)
-    
     #new_text = text_stemming(tweets['text'])
     new_text = remove_stopwords(tweets['Text'])
 
     # calculate tf 
-    map_tf(new_text,id,numDocs)
+    # map_tf(new_text,id,numDocs)
     tweets['processed_text'] = new_text.lower()
-
+    text_data[id] = tweets["Text"]
     for key in tweets:
         if key == "Tweet_ID":
-            doc.add(document.Field(key,tweets[key],metaType))
+            doc.add(document.Field(key,id,metaType))
         elif key == "processed_text":
             doc.add(document.Field(key,tweets[key],text_field_type))
         elif key == "Coordinates":
@@ -168,8 +166,9 @@ def document_insertion(tweets,id,numDocs):
 if __name__ == "__main__":
 
     lucene.initVM()
-    
-    df = process_json_tokenize("data/sample.json")
+
+    start = time.time()
+    df = process_json_tokenize()
 
     if os.path.exists("index/"):
         print('remove index folder\n')
@@ -188,8 +187,24 @@ if __name__ == "__main__":
 
     id = 0
     numDocs = len(df)
+    text_data = {}
+
+    metaType = document.FieldType()
+    metaType.setStored(True)
+    metaType.setTokenized(False)
+
+    text_field_type = document.FieldType()
+    text_field_type.setStored(False)
+    text_field_type.setTokenized(True)
+    text_field_type.setIndexOptions(IndexOptions.DOCS_AND_FREQS)
+
+    hashtag_field_type = document.FieldType()
+    hashtag_field_type.setStored(True)
+    hashtag_field_type.setTokenized(True)
+    hashtag_field_type.setIndexOptions(IndexOptions.DOCS)
+
     for tw in df:
-        d = document_insertion(tw,id,numDocs)
+        d = document_insertion(tw,str(id),numDocs)
         if id < 10:
             print("Document Inserted:")
             print('---------------------------')
@@ -200,7 +215,5 @@ if __name__ == "__main__":
         id += 1
 
     writer.close()
-
-    # calculate idf for each term
-    map_idf(numDocs)
-    write_tf_idf(numDocs)
+    end_execution()
+    write_text(text_data)

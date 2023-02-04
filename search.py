@@ -28,6 +28,35 @@ def extract_numbers(query):
             integers.append(i)
     return floats, integers
 
+def read_text():
+    text = {}
+    with open("temp/tweet_text.txt","r") as file:
+        start = False
+        t = ""
+        id = None
+        first = True
+        for line in file:
+            element = line.strip().split("^&&^||@@#$@@")
+            if len(element) == 2:
+                start = False        
+            if first:
+                t += element[1]
+                id = element[0]
+                start = True
+                first = False
+            if not start and len(element) == 2:
+                text[id] = t
+                t = element[1]
+                id = element[0]
+                start = True
+            elif start:
+                t += line
+        if id not in text:
+            text[id] = t
+    file.close()
+
+    return text
+
 def create_query(query):
     bQ = BooleanQuery.Builder()
     fields = ['processed_text','User','City','Country','hashtags','url']
@@ -89,7 +118,7 @@ tf = defaultdict(lambda: defaultdict(int))
 idf = defaultdict(int)
 tfidf = defaultdict(lambda: defaultdict(int))
 
-get_tf_idf()
+original_text = read_text()
 
 indexPath = File("index/").toPath() # create index path
 indexDir = FSDirectory.open(indexPath)
@@ -105,20 +134,28 @@ while True:
     input_query = remove_stopwords(input_query)
     
     query = create_query(input_query)
-    print(f'Query: {query}')
+    print(f'Query: {query}\n')
 
     start = time.time()
 
     results = searcher.search(query,10)
+
+    print(f'Top 10 matched documents')
     for hit in results.scoreDocs:
         d = reader.document(hit.doc)
         print(f'Document {hit.doc} - Score: {hit.score}')
         print('---------------------------')
+        tid = ""
         for f in d.getFields():
             name = f.name()
             print(f'{name}: {f.stringValue()}')
+            if name == "Tweet_ID":
+                tid = f.stringValue()
+        
+        print(f'Text: {original_text[tid]}')
         
         print('---------------------------')
+        print("\n")
 
     end_execution()
 
