@@ -54,8 +54,12 @@ def read_text():
         if id not in text:
             text[id] = t
     file.close()
-
     return text
+
+def check_lat_lon(cor):
+    if (cor[0] >= -90.0 and cor[0] <= 90.0) and (cor[1] >= -180.0 and cor[1] <= 180.0):
+        return True
+    return False
 
 def create_query(query):
     bQ = BooleanQuery.Builder()
@@ -69,8 +73,11 @@ def create_query(query):
     
     numbers = re.findall(r"[-]?\d*\.\d+|[-]?\d+",query)
     if len(numbers) == 2:
-        q2 = LatLonPoint.newDistanceQuery("Coordinates", float(numbers[0]), float(numbers[1]), 100000.0)
-        bQ.add(q2,BooleanClause.Occur.SHOULD)
+        numbers[0] = float(numbers[0])
+        numbers[1] = float(numbers[1])
+        if check_lat_lon(numbers):
+            q2 = LatLonPoint.newDistanceQuery("Coordinates", numbers[0], numbers[1], 100000.0)
+            bQ.add(q2,BooleanClause.Occur.SHOULD)
 
     return bQ.build()
 
@@ -93,7 +100,9 @@ def get_tf_idf():
                     idf[tokens[0]] = tokens[1]
         f.close()
     
-# 有一个list of document，需要计算tfidf分数，
+"""
+TODO: Implement another rank algorithm like: BM25, LM
+"""
 def ranking(documents):  
     # calculate TF-IDF scores
     tfidf = defaultdict(lambda: defaultdict(float))
@@ -131,8 +140,12 @@ searcher = IndexSearcher(reader)
 
 while True:
     input_query = input("Please Enter a query:\n")
+    # replace all non-alphanumeric characters
+    input_query = re.sub(r'[^0-9a-zA-Z]+'," ",input_query)
     input_query = remove_stopwords(input_query)
-    
+    print(input_query)
+    if input_query == "":
+        continue
     query = create_query(input_query)
     print(f'Query: {query}\n')
 
