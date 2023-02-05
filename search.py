@@ -141,7 +141,7 @@ searcher = IndexSearcher(reader)
 while True:
     input_query = input("Please Enter a query:\n")
     # replace all non-alphanumeric characters
-    input_query = re.sub(r'[^0-9a-zA-Z]+'," ",input_query)
+    input_query = re.sub(r'[^0-9a-zA-Z.-]+'," ",input_query)
     input_query = remove_stopwords(input_query)
     print(input_query)
     if input_query == "":

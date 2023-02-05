@@ -155,6 +155,8 @@ def document_insertion(tweets,id,numDocs):
             doc.add(document.Field(key,tweets[key],text_field_type))
         elif key == "Coordinates":
             doc.add(document.LatLonPoint('Coordinates',tweets[key][1],tweets[key][0]))
+            doc.add(document.Field('latitude',str(tweets[key][1]),document.TextField.TYPE_STORED))
+            doc.add(document.Field('longtitude',str(tweets[key][0]),document.TextField.TYPE_STORED))
         elif key == "hashtags":
             doc.add(document.Field(key,tweets[key],hashtag_field_type))
         elif key != "Text":
