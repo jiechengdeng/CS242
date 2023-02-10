@@ -101,9 +101,23 @@ def get_tf_idf():
         f.close()
     
 """
-TODO: Implement another rank algorithm like: BM25, LM
+    Implement BM25 ranking algorithm
 """
-def ranking(documents):  
+
+def ranking(documents, query):  
+    tokenized_doc = [documents.split(" ") for docs in documents]
+    bm25 = BM25Okapi(tokenized_doc)
+
+    tokenized_query = query.split(" ")
+    doc_scores = bm25.get_scores(tokenized_query)
+
+    """
+        code to retrieve top N documents (if needed)
+        
+        bm25.get_top_n(tokenized_query, documents, n=1)
+    """
+    
+    """
     # calculate TF-IDF scores
     tfidf = defaultdict(lambda: defaultdict(float))
     for i, doc in enumerate(tokenized_docs):
@@ -119,7 +133,7 @@ def ranking(documents):
     scores.sort(key=lambda x: x[1], reverse=True)
     
     return [documents[i] for i, _ in scores]  
-
+    """
 
 lucene.initVM()
 
