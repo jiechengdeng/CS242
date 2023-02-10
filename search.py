@@ -11,6 +11,7 @@ from org.apache.lucene.analysis.standard import StandardAnalyzer
 from org.apache.lucene.index import DirectoryReader, Term
 from indexing import remove_stopwords, format_coordinate
 from collections import defaultdict
+from rank_bm25 import BM25Okapi
 
 
 def end_execution():
