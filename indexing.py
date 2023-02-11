@@ -4,12 +4,13 @@ import lucene
 import math
 import json
 import time
+import org.apache.lucene.document as document
 from datetime import timedelta
 from java.io import *
+from org.apache.lucene.search.similarities import BM25Similarity
 from org.apache.lucene.analysis.tokenattributes import CharTermAttribute
 from org.apache.lucene.analysis.standard import StandardAnalyzer
 from org.apache.lucene.analysis.en import EnglishAnalyzer
-import org.apache.lucene.document as document
 from org.apache.lucene.index import IndexWriter, IndexWriterConfig, IndexOptions
 from org.apache.lucene.store import SimpleFSDirectory, FSDirectory
 from nltk.corpus import stopwords
@@ -17,7 +18,11 @@ from nltk.tokenize import word_tokenize
 from collections import defaultdict
 
 
-def end_execution():
+def end_execution(list_times,hashtags):
+    for i in sorted(list_times.keys()):
+        print(f'index {i} documents takes {(list_times[i] / 60):.2f} minutes')
+
+    print(f'\nTotal {len(hashtags.keys())} hashtags')
     end = time.time()
     print("time elapsed:",str(timedelta(seconds=end-start)))
 
@@ -172,15 +177,16 @@ if __name__ == "__main__":
     start = time.time()
     df = process_json_tokenize()
 
-    if os.path.exists("index/"):
+    if os.path.exists("index_tf_idf/"):
         print('remove index folder\n')
         subprocess.run("rm -r index",shell=True)
     
     # create index object
-    indexPath = File("index/").toPath() # create index path
+    indexPath = File("index_tf_idf/").toPath() # create index path
     indexDir = FSDirectory.open(indexPath) # create lucene store object to store index in hard disk
     writerConfig = IndexWriterConfig(StandardAnalyzer()) # create index configuration object. allow us to configure the index
     writerConfig.setOpenMode(IndexWriterConfig.OpenMode.CREATE)
+    #writerConfig.setSimilarity(BM25Similarity())
     writer = IndexWriter(indexDir,writerConfig) # create index writer with the input of index path and configuration 
 
     # read each document and use index writer to write to the index
@@ -198,14 +204,24 @@ if __name__ == "__main__":
     text_field_type = document.FieldType()
     text_field_type.setStored(False)
     text_field_type.setTokenized(True)
-    text_field_type.setIndexOptions(IndexOptions.DOCS_AND_FREQS)
+    text_field_type.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS)
 
     hashtag_field_type = document.FieldType()
     hashtag_field_type.setStored(True)
     hashtag_field_type.setTokenized(True)
     hashtag_field_type.setIndexOptions(IndexOptions.DOCS)
 
+    list_of_time = {}
+    collect_hashtags = defaultdict(int)
     for tw in df:
+        if id > 0 and id % 100000 == 0:
+            end = time.time()
+            seconds = timedelta(seconds=end-start)
+            list_of_time[id] = seconds.total_seconds()
+        tags = tw['hashtags'].split(" ")
+        for t in tags:
+            if t != "":
+                collect_hashtags[t] += 1
         d = document_insertion(tw,str(id),numDocs)
         if id < 10:
             print("Document Inserted:")
@@ -217,5 +233,5 @@ if __name__ == "__main__":
         id += 1
 
     writer.close()
-    end_execution()
+    end_execution(list_of_time,collect_hashtags)
     write_text(text_data)

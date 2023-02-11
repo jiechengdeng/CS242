@@ -4,6 +4,7 @@ import re
 from datetime import timedelta
 from java.io import *
 from org.apache.lucene.search import IndexSearcher, BooleanQuery, BooleanClause
+from org.apache.lucene.search.similarities import BM25Similarity
 from org.apache.lucene.store import SimpleFSDirectory, FSDirectory
 from org.apache.lucene.queryparser.classic import QueryParser, MultiFieldQueryParser
 from org.apache.lucene.document import LatLonPoint
@@ -100,26 +101,6 @@ def get_tf_idf():
                     idf[tokens[0]] = tokens[1]
         f.close()
     
-"""
-TODO: Implement another rank algorithm like: BM25, LM
-"""
-def ranking(documents):  
-    # calculate TF-IDF scores
-    tfidf = defaultdict(lambda: defaultdict(float))
-    for i, doc in enumerate(tokenized_docs):
-        for term in doc:
-            tfidf[i][term] = tf[i][term] * idf[term]
-    
-    # Rank the documents
-    scores = []
-    for i, doc in enumerate(tokenized_docs):
-        score = sum(tfidf[i][term] for term in doc)
-        scores.append((i, score))
-
-    scores.sort(key=lambda x: x[1], reverse=True)
-    
-    return [documents[i] for i, _ in scores]  
-
 
 lucene.initVM()
 
@@ -129,7 +110,8 @@ tfidf = defaultdict(lambda: defaultdict(int))
 
 original_text = read_text()
 
-indexPath = File("index/").toPath() # create index path
+#indexPath = File("index/").toPath() # create index path and read index with BM25 score function
+indexPath = File("index_tf_idf/").toPath() # create index path and read index with BM25 score function
 indexDir = FSDirectory.open(indexPath)
 
 # search the index
@@ -137,13 +119,15 @@ analyzer = StandardAnalyzer()
 reader = DirectoryReader.open(indexDir)
 searcher = IndexSearcher(reader)
 
+# set different ranking algorithm. Default is tf-idf
+#searcher.setSimilarity(BM25Similarity())
 
+    
 while True:
     input_query = input("Please Enter a query:\n")
     # replace all non-alphanumeric characters
     input_query = re.sub(r'[^0-9a-zA-Z.-]+'," ",input_query)
     input_query = remove_stopwords(input_query)
-    print(input_query)
     if input_query == "":
         continue
     query = create_query(input_query)
