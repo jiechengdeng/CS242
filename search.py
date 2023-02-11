@@ -102,27 +102,6 @@ def get_tf_idf():
                     idf[tokens[0]] = tokens[1]
         f.close()
     
-"""
-TODO: Implement another rank algorithm like: BM25, LM
-"""
-def ranking(documents):  
-    # calculate TF-IDF scores
-    tfidf = defaultdict(lambda: defaultdict(float))
-    for i, doc in enumerate(tokenized_docs):
-        for term in doc:
-            tfidf[i][term] = tf[i][term] * idf[term]
-    
-    # Rank the documents
-    scores = []
-    for i, doc in enumerate(tokenized_docs):
-        score = sum(tfidf[i][term] for term in doc)
-        scores.append((i, score))
-
-    scores.sort(key=lambda x: x[1], reverse=True)
-    
-    return [documents[i] for i, _ in scores]  
-
-
 lucene.initVM()
 
 tf = defaultdict(lambda: defaultdict(int))
